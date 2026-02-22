@@ -1,3 +1,9 @@
+---
+name: youtube-transcribe
+license: MIT
+description: "Transcribe YouTube videos and generate summaries. Uses free YouTube subtitles first, falls back to Groq Whisper Turbo. Triggers: транскрибируй видео, расшифруй ролик, сделай конспект, summarize youtube."
+---
+
 # Скилл: YouTube Transcribe
 
 Транскрибация YouTube видео + автоматическое саммари.
