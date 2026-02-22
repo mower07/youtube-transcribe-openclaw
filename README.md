@@ -1,42 +1,41 @@
 # YouTube Transcribe — скилл для OpenClaw
 
-Транскрибирует YouTube видео и делает краткий конспект. Работает бесплатно если у видео есть субтитры, и за копейки ($0.04/час) если нет.
+Транскрибирует YouTube видео и делает краткий конспект.
+
+**Работает на:** OpenClaw на собственном VPS/сервере.
+**Не работает на:** cloud-hosted агентах (Kimi Claw и аналоги) — YouTube блокирует их IP целиком, включая запросы субтитров.
 
 ---
 
 ## Как работает
 
-Стратегия двухступенчатая — от дешёвого к платному:
-
-1. Пробует получить субтитры напрямую с YouTube через `youtube-transcript-api` — это бесплатно и мгновенно
+1. Пробует получить субтитры через `youtube-transcript-api` — бесплатно, без скачивания аудио
 2. Если субтитров нет — скачивает аудио через `yt-dlp` и отправляет в Groq Whisper Turbo
 
-После транскрипции — краткое саммари через llama-3.3-70b. Результат сохраняется в markdown-файл.
+Результат: саммари через llama-3.3-70b + markdown-файл с полным транскриптом.
 
 ---
 
 ## Требования
 
-- Python-окружение (venv)
-- Groq API key — [бесплатный аккаунт на groq.com](https://console.groq.com) даёт 20 часов транскрипции в сутки
-- Без ffmpeg: yt-dlp скачивает аудио в нативных форматах (m4a / webm)
+- Python venv с зависимостями
+- Groq API key — бесплатный аккаунт на [groq.com](https://console.groq.com) даёт 20 часов транскрипции в сутки
+- ffmpeg не нужен
 
 ---
 
 ## Установка
 
 ```bash
-# Установить зависимости
 pip install youtube-transcript-api groq yt-dlp
 
-# Обязательно: Groq API ключ
 export GROQ_API_KEY=your_key_here
 
-# Опционально: cookies для обхода IP-блокировки на VPS
+# Опционально — если yt-dlp блокируется на вашем IP:
 export YTDLP_COOKIES=/path/to/cookies.txt
 ```
 
-Скопировать `transcribe.py` и `SKILL.md` в папку скилла OpenClaw:
+Скопировать в папку скилла:
 
 ```
 skills/youtube-transcribe/
@@ -50,11 +49,10 @@ skills/youtube-transcribe/
 ## Использование
 
 ```bash
-# Транскрипция + саммари
 GROQ_API_KEY=your_key python3 transcribe.py "https://youtube.com/watch?v=VIDEO_ID"
 
-# Только саммари (без вывода полного транскрипта в консоль)
-GROQ_API_KEY=your_key python3 transcribe.py "https://youtube.com/watch?v=VIDEO_ID" --summary-only
+# Только саммари
+GROQ_API_KEY=your_key python3 transcribe.py "URL" --summary-only
 ```
 
 Результат сохраняется в `memory/knowledge/transcripts/YYYY-MM-DD-название.md`.
@@ -64,25 +62,14 @@ GROQ_API_KEY=your_key python3 transcribe.py "https://youtube.com/watch?v=VIDEO_I
 ## Пример вывода
 
 ```
-🎬 Транскрибация: https://youtube.com/watch?v=...
-  Название: OpenClaw Setup with OpenRouter
-  Канал: ATOM
-  Длительность: 4:07
-
-📋 Пробую субтитры YouTube...
-  ✅ Субтитры получены
-
-📝 Длина транскрипта: 2200 символов
-
-🤖 Делаю саммари...
-
-✅ Сохранено: memory/knowledge/transcripts/2026-02-22-openclaw-setup.md
+🎬 OpenClaw Setup with OpenRouter | Канал: ATOM | 4:07
+✅ Субтитры получены
+✅ Сохранено: transcripts/2026-02-22-openclaw-setup.md
 
 САММАРИ:
-В видео показан процесс переустановки OpenClaw с OpenRouter API...
-- Удаление текущих настроек
-- Повторная установка через openclaw onboard
-- Выбор модели и ввод ключа API
+- Удаление текущих настроек через openclaw uninstall
+- Переустановка через openclaw onboard
+- Выбор модели и ввод API ключа
 - Подключение Telegram-канала
 ```
 
@@ -93,52 +80,34 @@ GROQ_API_KEY=your_key python3 transcribe.py "https://youtube.com/watch?v=VIDEO_I
 | Сценарий | Цена |
 |---|---|
 | Видео с субтитрами | $0 |
-| 1 час аудио без субтитров | ~$0.04 (Groq Whisper Turbo) |
-| Саммари (один запрос) | ~$0.0002 (llama-3.3-70b) |
-
-Groq Free Tier: 20 часов транскрипции в сутки — для большинства задач хватает.
+| 1 час без субтитров (Groq Whisper) | ~$0.04 |
+| Саммари (llama-3.3-70b) | ~$0.0002 |
 
 ---
 
 ## Ограничения
 
-- Субтитры доступны не у всех видео и не на всех языках
-- ffmpeg не нужен, но без него нет конвертации форматов — только нативный m4a/webm
-- Файл аудио до 24MB (лимит Groq API 25MB) — скрипт использует `worstaudio` чтобы уложиться
+**IP-блокировка.** YouTube блокирует запросы (включая субтитры) с IP крупных облачных провайдеров. Если вы видите ошибку `RequestBlocked` или `Sign in to confirm` — ваш IP в чёрном списке. Решение: cookies.txt (см. ниже) или смена провайдера. На managed cloud (Kimi, и аналоги) это не решается.
 
-## IP-блокировка на VPS: как решить
+**Cookies для обхода IP-блокировки.** Работает только если у вас есть доступ к файловой системе агента:
+1. Установить расширение "Get cookies.txt LOCALLY" в Chrome/Firefox
+2. Зайти на youtube.com залогиненным → экспортировать cookies.txt
+3. Загрузить на сервер, задать `export YTDLP_COOKIES=/path/to/cookies.txt`
 
-YouTube блокирует скачивание аудио с IP некоторых облачных провайдеров.
-Путь через субтитры этой проблемы не имеет — работает на любом сервере.
+Cookies обновлять раз в несколько месяцев.
 
-Если нужен fallback для видео без субтитров — один раз настроить cookies:
+**Размер файла.** Скрипт использует `worstaudio` и лимит 24MB — Groq принимает до 25MB. Видео длиннее ~2.5 часов могут не влезть.
 
-**Шаг 1.** Установить расширение ["Get cookies.txt LOCALLY"](https://chrome.google.com/webstore/detail/get-cookiestxt-locally/cclelndahbckbenkjhflpdbgdldlbecc) в Chrome или Firefox.
-
-**Шаг 2.** Зайти на youtube.com (залогиниться), нажать расширение → Export → сохранить `cookies.txt`.
-
-**Шаг 3.** Загрузить файл на сервер и прописать путь:
-
-```bash
-export YTDLP_COOKIES=/path/to/cookies.txt
-```
-
-После этого скрипт будет автоматически использовать cookies для всех загрузок — пользователь просто даёт ссылку и получает транскрипцию.
-
-> Cookies периодически протухают — раз в несколько месяцев нужно обновить файл.
+**ffmpeg не нужен.** yt-dlp скачивает нативные форматы (m4a/webm), конвертация не требуется.
 
 ---
 
-## Триггеры для агента
+## Триггеры
 
 ```
-- "транскрибируй видео"
-- "расшифруй ролик"
-- "сделай конспект видео"
-- "summarize youtube"
-- ссылка на YouTube + запрос на конспект
+транскрибируй видео / расшифруй ролик / сделай конспект / summarize youtube
 ```
 
 ---
 
-Сделано для [OpenClaw](https://openclaw.ai) — AI-агент в Telegram.
+Сделано для [OpenClaw](https://openclaw.ai).
