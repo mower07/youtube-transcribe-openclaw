@@ -17,6 +17,9 @@ from datetime import datetime
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
 VENV_PYTHON = os.path.expanduser("~/.agent-venv/bin/python3")
 YTDLP_BIN = os.path.expanduser("~/.agent-venv/bin/yt-dlp")
+# Опциональный путь к cookies.txt для обхода IP-блокировки YouTube
+# Задать через: export YTDLP_COOKIES=/path/to/cookies.txt
+YTDLP_COOKIES = os.environ.get("YTDLP_COOKIES", "")
 
 
 def extract_video_id(url: str) -> str:
@@ -72,19 +75,22 @@ def download_audio(url: str, output_dir: str) -> str:
     """
     import subprocess
     output_template = os.path.join(output_dir, "audio.%(ext)s")
-    result = subprocess.run(
-        [
-            YTDLP_BIN,
-            # worstaudio = минимальный размер, достаточно для Whisper
-            "-f", "worstaudio[ext=m4a]/worstaudio[ext=webm]/worstaudio",
-            "-o", output_template,
-            "--no-playlist",
-            # Не скачивать если файл больше 24MB — лимит Groq 25MB
-            "--max-filesize", "24M",
-            url,
-        ],
-        capture_output=True, text=True, timeout=300
-    )
+    cmd = [
+        YTDLP_BIN,
+        # worstaudio = минимальный размер, достаточно для Whisper
+        "-f", "worstaudio[ext=m4a]/worstaudio[ext=webm]/worstaudio",
+        "-o", output_template,
+        "--no-playlist",
+        # Не скачивать если файл больше 24MB — лимит Groq 25MB
+        "--max-filesize", "24M",
+    ]
+    # Добавить cookies если заданы (обход IP-блокировки)
+    if YTDLP_COOKIES and os.path.exists(YTDLP_COOKIES):
+        cmd += ["--cookies", YTDLP_COOKIES]
+        print(f"  [yt-dlp] Используются cookies: {YTDLP_COOKIES}", file=sys.stderr)
+    cmd.append(url)
+
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
     if result.returncode != 0:
         stderr = result.stderr
         if "Sign in to confirm" in stderr or "bot" in stderr.lower():

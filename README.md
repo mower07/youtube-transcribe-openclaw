@@ -29,8 +29,11 @@
 # Установить зависимости
 pip install youtube-transcript-api groq yt-dlp
 
-# Сохранить API ключ
+# Обязательно: Groq API ключ
 export GROQ_API_KEY=your_key_here
+
+# Опционально: cookies для обхода IP-блокировки на VPS
+export YTDLP_COOKIES=/path/to/cookies.txt
 ```
 
 Скопировать `transcribe.py` и `SKILL.md` в папку скилла OpenClaw:
@@ -103,22 +106,26 @@ Groq Free Tier: 20 часов транскрипции в сутки — для 
 - ffmpeg не нужен, но без него нет конвертации форматов — только нативный m4a/webm
 - Файл аудио до 24MB (лимит Groq API 25MB) — скрипт использует `worstaudio` чтобы уложиться
 
-## Известная проблема: IP-блокировка на VPS
+## IP-блокировка на VPS: как решить
 
 YouTube блокирует скачивание аудио с IP некоторых облачных провайдеров.
-Путь через субтитры (Шаг 1) этой проблемы **не имеет** — он работает на любом сервере.
+Путь через субтитры этой проблемы не имеет — работает на любом сервере.
 
-Если нужен fallback через yt-dlp на заблокированном IP — экспортируй cookies из браузера:
+Если нужен fallback для видео без субтитров — один раз настроить cookies:
+
+**Шаг 1.** Установить расширение ["Get cookies.txt LOCALLY"](https://chrome.google.com/webstore/detail/get-cookiestxt-locally/cclelndahbckbenkjhflpdbgdldlbecc) в Chrome или Firefox.
+
+**Шаг 2.** Зайти на youtube.com (залогиниться), нажать расширение → Export → сохранить `cookies.txt`.
+
+**Шаг 3.** Загрузить файл на сервер и прописать путь:
 
 ```bash
-# Установить расширение "Get cookies.txt LOCALLY" в Chrome/Firefox
-# Экспортировать cookies для youtube.com → сохранить как cookies.txt на сервере
-
-# Добавить в вызов yt-dlp вручную:
-yt-dlp --cookies /path/to/cookies.txt "URL"
+export YTDLP_COOKIES=/path/to/cookies.txt
 ```
 
-Или использовать скрипт только для видео с субтитрами — большинство популярных каналов их имеют.
+После этого скрипт будет автоматически использовать cookies для всех загрузок — пользователь просто даёт ссылку и получает транскрипцию.
+
+> Cookies периодически протухают — раз в несколько месяцев нужно обновить файл.
 
 ---
 
