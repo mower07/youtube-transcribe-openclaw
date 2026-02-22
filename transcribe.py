@@ -65,21 +65,40 @@ def get_video_info(url: str) -> dict:
 
 
 def download_audio(url: str, output_dir: str) -> str:
-    """Скачать аудио через yt-dlp (без ffmpeg)."""
+    """Скачать аудио через yt-dlp (без ffmpeg).
+    
+    Используем worstaudio — Whisper не нужно высокое качество,
+    зато файл помещается в лимит Groq (25MB).
+    """
     import subprocess
     output_template = os.path.join(output_dir, "audio.%(ext)s")
     result = subprocess.run(
         [
             YTDLP_BIN,
-            "-f", "bestaudio[ext=m4a]/bestaudio[ext=webm]/bestaudio",
+            # worstaudio = минимальный размер, достаточно для Whisper
+            "-f", "worstaudio[ext=m4a]/worstaudio[ext=webm]/worstaudio",
             "-o", output_template,
             "--no-playlist",
+            # Не скачивать если файл больше 24MB — лимит Groq 25MB
+            "--max-filesize", "24M",
             url,
         ],
         capture_output=True, text=True, timeout=300
     )
     if result.returncode != 0:
-        raise RuntimeError(f"yt-dlp error: {result.stderr[:500]}")
+        stderr = result.stderr
+        if "Sign in to confirm" in stderr or "bot" in stderr.lower():
+            raise RuntimeError(
+                "YouTube блокирует IP провайдера. Решение: экспортируй cookies из браузера "
+                "и добавь параметр --cookies cookies.txt в yt-dlp. "
+                "Видео с субтитрами транскрибируются без этой проблемы."
+            )
+        if "File is larger than max-filesize" in stderr:
+            raise RuntimeError(
+                "Видео слишком длинное — аудиофайл не помещается в лимит Groq (25MB). "
+                "Доступна только транскрипция через субтитры."
+            )
+        raise RuntimeError(f"yt-dlp error: {stderr[:500]}")
     
     # Find the downloaded file
     for ext in ["m4a", "webm", "ogg", "opus", "mp3", "wav"]:
