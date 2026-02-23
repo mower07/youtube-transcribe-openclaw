@@ -1,0 +1,22 @@
+# Secrets & tokens
+.env
+*.env
+cookies.txt
+*_token.json
+token*.json
+
+# Logs & output
+*.log
+*.jsonl
+memory/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# OS
+.DS_Store
+Thumbs.db

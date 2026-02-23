@@ -1,41 +1,43 @@
-# YouTube Transcribe — скилл для OpenClaw
+🇺🇸 English | [🇷🇺 Русский](README.ru.md)
 
-Транскрибирует YouTube видео и делает краткий конспект.
+# YouTube Transcribe — OpenClaw Skill
 
-**Работает на:** OpenClaw на собственном VPS/сервере.
-**Не работает на:** cloud-hosted агентах (Kimi Claw и аналоги) — YouTube блокирует их IP целиком, включая запросы субтитров.
+Transcribes YouTube videos and generates a concise summary.
 
----
-
-## Как работает
-
-1. Пробует получить субтитры через `youtube-transcript-api` — бесплатно, без скачивания аудио
-2. Если субтитров нет — скачивает аудио через `yt-dlp` и отправляет в Groq Whisper Turbo
-
-Результат: саммари через llama-3.3-70b + markdown-файл с полным транскриптом.
+**Works on:** OpenClaw running on your own VPS/server.
+**Does NOT work on:** cloud-hosted agents (Kimi Claw and similar) — YouTube blocks their IPs entirely, including subtitle requests.
 
 ---
 
-## Требования
+## How It Works
 
-- Python venv с зависимостями
-- Groq API key — бесплатный аккаунт на [groq.com](https://console.groq.com) даёт 20 часов транскрипции в сутки
-- ffmpeg не нужен
+1. Tries to fetch subtitles via `youtube-transcript-api` — free, no audio download needed
+2. If no subtitles — downloads audio via `yt-dlp` and sends it to Groq Whisper Turbo
+
+Output: summary via llama-3.3-70b + a markdown file with the full transcript.
 
 ---
 
-## Установка
+## Requirements
+
+- Python venv with dependencies installed
+- Groq API key — free account at [groq.com](https://console.groq.com) gives 20 hours of transcription per day
+- ffmpeg is not required
+
+---
+
+## Installation
 
 ```bash
 pip install youtube-transcript-api groq yt-dlp
 
 export GROQ_API_KEY=your_key_here
 
-# Опционально — если yt-dlp блокируется на вашем IP:
+# Optional — if yt-dlp gets blocked on your IP:
 export YTDLP_COOKIES=/path/to/cookies.txt
 ```
 
-Скопировать в папку скилла:
+Copy into the skill directory:
 
 ```
 skills/youtube-transcribe/
@@ -46,63 +48,63 @@ skills/youtube-transcribe/
 
 ---
 
-## Использование
+## Usage
 
 ```bash
 GROQ_API_KEY=your_key python3 transcribe.py "https://youtube.com/watch?v=VIDEO_ID"
 
-# Только саммари
+# Summary only
 GROQ_API_KEY=your_key python3 transcribe.py "URL" --summary-only
 ```
 
-Результат сохраняется в `memory/knowledge/transcripts/YYYY-MM-DD-название.md`.
+Output is saved to `memory/knowledge/transcripts/YYYY-MM-DD-title.md`.
 
 ---
 
-## Пример вывода
+## Example Output
 
 ```
-🎬 OpenClaw Setup with OpenRouter | Канал: ATOM | 4:07
-✅ Субтитры получены
-✅ Сохранено: transcripts/2026-02-22-openclaw-setup.md
+🎬 OpenClaw Setup with OpenRouter | Channel: ATOM | 4:07
+✅ Subtitles fetched
+✅ Saved: transcripts/2026-02-22-openclaw-setup.md
 
-САММАРИ:
-- Удаление текущих настроек через openclaw uninstall
-- Переустановка через openclaw onboard
-- Выбор модели и ввод API ключа
-- Подключение Telegram-канала
+SUMMARY:
+- Removing existing config via openclaw uninstall
+- Reinstalling via openclaw onboard
+- Selecting model and entering API key
+- Connecting Telegram channel
 ```
 
 ---
 
-## Стоимость
+## Cost
 
-| Сценарий | Цена |
+| Scenario | Price |
 |---|---|
-| Видео с субтитрами | $0 |
-| 1 час без субтитров (Groq Whisper) | ~$0.04 |
-| Саммари (llama-3.3-70b) | ~$0.0002 |
+| Video with subtitles | $0 |
+| 1 hour without subtitles (Groq Whisper) | ~$0.04 |
+| Summary (llama-3.3-70b) | ~$0.0002 |
 
 ---
 
-## Ограничения
+## Limitations
 
-**IP-блокировка.** YouTube блокирует запросы (включая субтитры) с IP крупных облачных провайдеров. Если вы видите ошибку `RequestBlocked` или `Sign in to confirm` — ваш IP в чёрном списке. Решение: cookies.txt (см. ниже) или смена провайдера. На managed cloud (Kimi, и аналоги) это не решается.
+**IP blocking.** YouTube blocks requests (including subtitles) from IPs of major cloud providers. If you see `RequestBlocked` or `Sign in to confirm` — your IP is on the blocklist. Fix: cookies.txt (see below) or switch provider. On managed cloud (Kimi and similar) this cannot be resolved.
 
-**Cookies для обхода IP-блокировки.** Работает только если у вас есть доступ к файловой системе агента:
-1. Установить расширение "Get cookies.txt LOCALLY" в Chrome/Firefox
-2. Зайти на youtube.com залогиненным → экспортировать cookies.txt
-3. Загрузить на сервер, задать `export YTDLP_COOKIES=/path/to/cookies.txt`
+**Cookies to bypass IP blocking.** Only works if you have filesystem access to the agent's server:
+1. Install the "Get cookies.txt LOCALLY" extension in Chrome/Firefox
+2. Open youtube.com while logged in → export cookies.txt
+3. Upload to the server, set `export YTDLP_COOKIES=/path/to/cookies.txt`
 
-Cookies обновлять раз в несколько месяцев.
+Refresh cookies every few months.
 
-**Размер файла.** Скрипт использует `worstaudio` и лимит 24MB — Groq принимает до 25MB. Видео длиннее ~2.5 часов могут не влезть.
+**File size.** The script uses `worstaudio` with a 24MB limit — Groq accepts up to 25MB. Videos longer than ~2.5 hours may not fit.
 
-**ffmpeg не нужен.** yt-dlp скачивает нативные форматы (m4a/webm), конвертация не требуется.
+**ffmpeg not required.** yt-dlp downloads native formats (m4a/webm); no conversion needed.
 
 ---
 
-## Триггеры
+## Triggers
 
 ```
 транскрибируй видео / расшифруй ролик / сделай конспект / summarize youtube
@@ -110,4 +112,4 @@ Cookies обновлять раз в несколько месяцев.
 
 ---
 
-Сделано для [OpenClaw](https://openclaw.ai).
+Built for [OpenClaw](https://openclaw.ai).
