@@ -1,0 +1,12 @@
+{
+  "name": "YouTube Transcribe",
+  "tagline": "Transcribe YouTube videos and generate summaries. Free subtitles first, Groq Whisper fallback.",
+  "description": "Transcribes YouTube videos and generates structured summaries. Uses free YouTube subtitles when available (no API key needed), falls back to Groq Whisper Turbo ($0.04/hr) for videos without subtitles.\n\nOutputs: full transcript + structured summary with key points, quotes, and action items. Works for any language.\n\nTriggers: 'transcribe video', 'summarize youtube', 'расшифруй ролик', 'сделай конспект'. Accepts YouTube URLs in any format.",
+  "category": "productivity",
+  "tags": ["youtube", "transcription", "whisper", "groq", "summary", "video"],
+  "version": "1.0.0",
+  "license": "MIT",
+  "pricing": "free",
+  "support_url": "https://github.com/mower07/youtube-transcribe-openclaw/issues",
+  "homepage": "https://github.com/mower07/youtube-transcribe-openclaw"
+}
